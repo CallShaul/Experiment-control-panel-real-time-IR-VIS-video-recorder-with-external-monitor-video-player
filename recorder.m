@@ -223,6 +223,7 @@ timing_idx = 1;
 videosPlayed = 0;
 frameCount = 0;
 tLast_play = 1;
+tLast_flag = 1;
 tLast_display = 1;
 t = uint64(zeros(1));
 t_seg = zeros(2,1);
