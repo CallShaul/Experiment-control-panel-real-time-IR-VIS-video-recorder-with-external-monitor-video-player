@@ -23,35 +23,36 @@ dir_file_list = dir_file_list(~ismember({dir_file_list.name},{'.','..'}));
 
 files2process = [15, 8];%[1, 18]; % choose indexes of data files to calc
 
+channel = 'ir'; % VIS / NIR / IR / VISR / VISG / VISB / NIRR / NIRG / NIRB
 disp_last_frames = 0; % 1 / 0
 mode = 'avg'; % diff / avg / std
 comparison = 'summary'; % file / roi / summary
-channel = 'ir'; % VIS / NIR / IR / VISR / VISG / VISB / NIRR / NIRG / NIRB
 group_by = 'Emotions'; % Played_order / Video_index / Emotions
-background_subtraction = 6; % 0: off, x: subtract ROI x from the others.
+ir_back_sub = 6; % 0: off, x: subtract ROI x from the others. (for IR data only!)
 
 filter_type = 'no'; % 'low' / 'high' / 'bandpass' / 'median' / 'dc' / 'no'
 cutoff_freq = [0.8, 1.5]; % positive number in case filter is low / high. for bandpass use: [f_low, f_high]
 
 [var_names_list, emotions_list] = intensity_comparison(channel, folder, files2process,...
-    disp_last_frames, mode, comparison, background_subtraction, group_by,...
+    disp_last_frames, mode, comparison, ir_back_sub, group_by,...
     filter_type, cutoff_freq);
 
 %% Plot signal
-file_name = 'Shauls experiment';
+
+file_name = 'FullPilot Sub3';
 subFolder = 'Analayzed data\';
 file2load = fullfile(subFolder,file_name);
 
 load(file2load);
 subplot = 16;
 frame_plot = 0;
-background_subtraction = 0; % 0: off, x: subtract ROI x from the others.
+ir_back_sub = 0; % 0: off, x: subtract ROI x from the others.
 group_by = 'Emotions'; % Played_order / Video_index / Emotions
 
 filter_type = 'dc'; % 'low' / 'high' / 'bandpass' / 'median' / 'dc' / 'no'
 cutoff_freq = [0.2, 0.4]; % positive number in case filter is low / high. for bandpass use: [f_low, f_high]
 
-signal_plot(nir, 'sig', subplot, frame_plot, filter_type, cutoff_freq, background_subtraction, group_by)
+signal_plot(ir, 'sig', subplot, frame_plot, filter_type, cutoff_freq, ir_back_sub, group_by)
 
 %% Signals comparison
 

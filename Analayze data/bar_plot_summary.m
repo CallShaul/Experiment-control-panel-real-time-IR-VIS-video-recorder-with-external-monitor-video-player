@@ -69,11 +69,11 @@ for i=1:roi_num
     sgtitle(str); % plots the emot_idx-title
     
     if strcmp(channel, 'Red')
-        b = bar(xvec, bar_data(k,:,i), 'BarWidth', 0.6, 'FaceColor', 'r');
+        b = bar(xvec, bar_data(:,:,i), 'BarWidth', 0.6, 'FaceColor', 'r');
     elseif strcmp(channel, 'Green')
-        b = bar(xvec, bar_data(k,:,i), 'BarWidth', 0.6, 'FaceColor', 'g');
+        b = bar(xvec, bar_data(:,:,i), 'BarWidth', 0.6, 'FaceColor', 'g');
     elseif strcmp(channel, 'Blue')
-        b = bar(xvec, bar_data(k,:,i), 'BarWidth', 0.6, 'FaceColor', 'b');
+        b = bar(xvec, bar_data(:,:,i), 'BarWidth', 0.6, 'FaceColor', 'b');
     else
         b = bar(xvec, bar_data(:,:,i), 'BarWidth', 0.6, 'FaceColor', [50 50 50]/255);
     end
@@ -94,6 +94,9 @@ for i=1:roi_num
     
     %title(str); % print signal's title
     xlabel('File name');
+    mini = min(min(bar_data(:,:,i)));
+    maxi = max(max(bar_data(:,:,i)));
+    ylim([mini - 0.01*mini, maxi + 0.01*maxi]);
     axis on;
     
     if strcmp(channel,'IR') == 1
@@ -104,15 +107,9 @@ for i=1:roi_num
     
     sub_count = sub_count + 1;
     
-    if mod(i_counter, sub) == 0 && i ~= roi_num
-        
+    if mod(i_counter, sub) == 0 && i ~= roi_num 
         batch = batch + 1;
         sub_count = 1;
-        %             str = ['Roi: ', char(roi_labels(i+1)), ', Videos emot_idx: ', num2str(vids2process(1)), '-', num2str(vids_num+vids2process(1)-1),...
-        %                 ', Channel: ', channel, ', Videos order by: ', group_by];
-        %             figure('Name', str); % opens a new figure window
-        %             sgtitle(str); % plots the emot_idx-title
-        
     end
     
     i_counter = i_counter + 1;

@@ -1,5 +1,5 @@
 function [var_names_list, emotions_list] = intensity_comparison(channel, folder, files2process,...
-    disp_last_frames, mode, comparison, background_subtraction, group_by,...
+    disp_last_frames, mode, comparison, ir_back_sub, group_by,...
     filter_type, cutoff_freq)
 
 if folder(end) ~= '\' % case last backslesh is missing
@@ -63,13 +63,7 @@ for k = files2process
                 var_names_list(i_counter, k_counter) = string(data{i}.var_name);
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('sig = data{i}.sig;'); % get the desired signal
-                
-                if background_subtraction ~= 0
-                    temp = sig(:,background_subtraction);
-                    sig = sig - sig(:,background_subtraction);
-                    sig(:,background_subtraction) = temp;
-                end
-                
+    
                 fps = data{1, 1}.play_list(i,8);
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
@@ -89,13 +83,7 @@ for k = files2process
                 var_names_list(i_counter, k_counter) = string(data{i}.var_name);
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('R = data{i}.R;'); % get the desired signal
-                
-                if background_subtraction ~= 0
-                    temp = R(:,background_subtraction);
-                    R = R - R(:,background_subtraction);
-                    R(:,background_subtraction) = temp;
-                end
-                
+
                 fps = data{1, 1}.play_list(i,8);
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
@@ -115,13 +103,7 @@ for k = files2process
                 var_names_list(i_counter, k_counter) = string(data{i}.var_name);
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('G = data{i}.G;'); % get the desired signal
-                
-                if background_subtraction ~= 0
-                    temp = G(:,background_subtraction);
-                    G = G - G(:,background_subtraction);
-                    G(:,background_subtraction) = temp;
-                end
-                
+
                 fps = data{1, 1}.play_list(i,8);
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
@@ -141,13 +123,7 @@ for k = files2process
                 var_names_list(i_counter, k_counter) = string(data{i}.var_name);
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('B = data{i}.B;'); % get the desired signal
-                
-                if background_subtraction ~= 0
-                    temp = B(:,background_subtraction);
-                    B = B - B(:,background_subtraction);
-                    B(:,background_subtraction) = temp;
-                end
-                
+
                 fps = data{1, 1}.play_list(i,8);
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
@@ -167,10 +143,13 @@ for k = files2process
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('sig = data{i}.sig;'); % get the desired signal
                 
-                if background_subtraction ~= 0
-                    temp = sig(:,background_subtraction);
-                    sig = sig - sig(:,background_subtraction);
-                    sig(:,background_subtraction) = temp;
+                if ir_back_sub ~= 0
+                    temp_background = sig(:, ir_back_sub);
+                    temp_initial_values = sig(1, :);
+                    sig = sig - sig(:, ir_back_sub);
+                    sig = sig - mean(sig);
+                    sig = sig + temp_initial_values;
+                    sig(:, ir_back_sub) = temp_background;
                 end
                 
                 fps = data{1, 1}.play_list(i,8);
