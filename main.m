@@ -1269,12 +1269,12 @@ classdef main < matlab.apps.AppBase
                 cam = webcam(app.DeviceDropDown.Value);
                 cam.Resolution = app.ResolutionDropDown.Value;
                 frame = snapshot(cam); % get imgage from VIS camera
+                crop_cor = ROIcrop(app, frame);
+                app.CroppingcoordinatesEditField.Value = num2str(crop_cor);
             catch
                 status(app, 'Error connecting to VIS camera.', 'r', 1, 0);
             end
-            
-            crop_cor = ROIcrop(app, frame);
-            app.CroppingcoordinatesEditField.Value = num2str(crop_cor);
+
         end
 
         % Value changed function: CropCheckBox
@@ -1670,13 +1670,16 @@ classdef main < matlab.apps.AppBase
             try
                 cam = webcam(app.DeviceDropDown_2.Value);
                 cam.Resolution = app.ResolutionDropDown_2.Value;
-                frame = snapshot(cam); % get imgage from VIS camera
+                for i=1:20
+                    frame = snapshot(cam); % get image from NIR camera - take 20 frames since our specific camera needs several frames to work properly
+                end
+                crop_cor = ROIcrop(app, frame);
+                app.CroppingcoordinatesEditField_2.Value = num2str(crop_cor);
             catch
                 status(app, 'Error connecting to NIR camera.', 'r', 1, 0);
             end
             
-            crop_cor = ROIcrop(app, frame);
-            app.CroppingcoordinatesEditField_2.Value = num2str(crop_cor);
+            
         end
 
         % Button pushed function: cameraRefresh_3
