@@ -223,14 +223,13 @@ timing_idx = 1;
 videosPlayed = 0;
 frameCount = 0;
 tLast_play = 1;
-tLast_flag = 1;
 tLast_display = 1;
 t = uint64(zeros(1));
 t_seg = zeros(2,1);
 tStart = tic;
 delay_corrector = str2double(app.FPSdelaycorrectorEditField.Value);
 delay_corrector_step = str2double(app.FPSdelaycorrectorstepEditField.Value);
-playFlag = 2; % 2 stands for initial intro screen mode
+playFlag = 2; % 2: initial intro screen mode, 1: a video is playing, 0: black screen is playing
 
 if ~exist('playlist', 'var')
     playlist = 0;
@@ -457,21 +456,18 @@ while(viewer_is_running) % main loop
             end
         end
         
-        if t(idx) - t(tLast_play) >= (properties.playTime*1000 - 1000) && playFlag == 1 ... % flags LWIR camera 1 sec before new video starts
-                && t(idx) - t(tLast_flag) >= 2000
-        
+        if t(idx) - t(tLast_play) >= (properties.pauseTime*1000 - 1000) && playFlag == 0 ... % flags LWIR camera 1 sec before new video starts
+                && (t(idx) - t(tLast_flag) >= 2000) && properties.flag_IR_camera_on_black == 1 ...
+                && properties.LWIR_camera == 1
+
             IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
-            tLast_flag = idx;
+            tLast_flag = idx; % saves current flag time
             
         end
         
         if (t(idx) - t(tLast_play) >= properties.pauseTime*1000 && playFlag == 0 &&...
                 videosPlayed < list_length) || (playFlag == 0 && videosPlayed == 0) % checks if it's time to play a video
-            
-%             if properties.flag_IR_camera_on_black == 1 && properties.LWIR_camera == 1
-%                 IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
-%             end
-            
+
             if properties.popup == 1 % case need to wait for popup feedback
                 
                 if feedback.status == 0
@@ -528,11 +524,7 @@ while(viewer_is_running) % main loop
             video_idx = video_idx + 1; % new line at playlist structure
             playFlag = 0; % marks next time to play a video
             tLast_play = idx; % saves the index of the last time found
-            
-            %             if properties.flag_IR_camera_on_black == 1 && properties.LWIR_camera == 1
-            %                 IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
-            %             end
-            
+
             if video_idx <= list_length && properties.play_mode == 0
                 properties.playTime = playlist(video_idx).duration; % save length of next video - if exists
             end
@@ -602,20 +594,17 @@ while(viewer_is_running) % main loop
             vlc.Fullscreen = 'on'; % makes sure VLC player is at fullscreen mode (every second)
         end
         
-        if properties.save_data == 1
-            
-            timing(timing_idx,4) = delay_corrector; % save FPS corrector parameter [units: %*10]
-            
             if timing(end, 2) ~= properties.constantFrameRate % perform minor time delay adjustments to get accurate FPS
                 if timing(end, 2) > properties.constantFrameRate
                     delay_corrector = delay_corrector + delay_corrector_step; % FPS is too high - increase delay by 0.1% between frames
-                else
+                elseif timing(end, 2) < properties.constantFrameRate && delay_corrector > 0
                     delay_corrector = delay_corrector - delay_corrector_step; % FPS is too low - reduce delay by 0.1% between frames
+                end
+                if delay_corrector < 0 
+                    delay_corrector = 0; % make sure delay_corrector will never be negative
                 end
                 app.FPSdelaycorrectorEditField.Value = num2str(delay_corrector);
             end
-            
-        end
         
         timing_idx = timing_idx + 1;
         frameCount = 0; % reset the frames counter
