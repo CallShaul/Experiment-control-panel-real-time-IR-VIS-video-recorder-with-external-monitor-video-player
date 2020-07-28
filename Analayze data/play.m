@@ -1,34 +1,38 @@
-function play(file2load, channel, video_number, fast_play, segment_time, diff)
+function play(file2load, channel, video_idx, fast_play, segment_time, diff)
 
 load(file2load, 'properties')
 
-[raw_vis, raw_nir, raw_ir, var_name, vars_idx] = get_raw_vid(file2load, video_number, channel, properties); % get video from data file
+[raw_vis, raw_nir, raw_ir, var_name, ~] = get_raw_vid(file2load, video_idx, channel, properties); % get video from data file
 
-if ndims(raw_vis) > 2 & ndims(raw_ir) > 2  % checks if VIS camera data file have been loaded
-    vis_dimenstions = ndims(raw_vis);
-    ir_dimenstions = ndims(raw_ir);
-    len = size(raw_ir, ir_dimenstions);
-    mode = 1;
-elseif ndims(raw_vis) > 2 % checks if IR camera data file have been loaded
-    vis_dimenstions = ndims(raw_vis);
-    ir_dimenstions = 0;
-    len = size(raw_vis, vis_dimenstions);
-    mode = 0;
-elseif ndims(raw_ir) > 2 % checks if IR camera data file have been loaded
-    ir_dimenstions = ndims(raw_ir);
-    vis_dimenstions = 0;
-    len = size(raw_ir, ir_dimenstions);
-    mode = 0;
-else
+mode = 0;
+flag = 0;
+
+vis_dim = ndims(raw_vis);
+if vis_dim > 2
+    len = size(raw_vis, vis_dim);
+    mode = mode + 1;
+end
+nir_dim = ndims(raw_nir);
+if nir_dim  > 2
+    len = size(raw_nir, nir_dim);
+    mode = mode + 1;
+end
+ir_dim = ndims(raw_ir);
+if ir_dim > 2
+    len = size(raw_ir, ir_dim);
+    mode = mode + 1;
+end
+
+if mode == 0
     disp('Error loading video from data file.');
     return
 end
 
-if diff == 1
+if diff
     diff = 0;
 end
 
-frame_rate = properties.play_list(video_number, 8);
+frame_rate = properties.play_list(video_idx, 8);
 
 if segment_time == 0
     segment_time = 1/frame_rate; % original frame time
@@ -36,127 +40,128 @@ end
 
 i = 1;
 fig = figure();
-fig.Name = ['Video file: ', var_name]; % print signal's title
+name = char(extractAfter(var_name(1), '_'));
+fig.Name = ['Video file: ', name]; % print signal's title
 tStart = tic;
 
-if vis_dimenstions == 3     
+if vis_dim == 3
     sum_diff_img = uint8(zeros(size(raw_vis(:,:,1))));
-elseif vis_dimenstions == 4
+elseif vis_dim == 4
     sum_diff_img = uint8(zeros(size(raw_vis(:,:,:,1))));
 end
 
 %tTotal = tic;
 
-while(i < (len - diff)) & (ishandle(fig) == 1)
+while(i < (len - diff)) & (ishandle(fig))
     
-    if mode == 1 % dual channel view
+    if mode == 1
         
-        imagesc(subplot(1,2,1));
-        
-        if ir_dimenstions == 3
-            
-            if diff == 0
-                imagesc(raw_ir(:,:,i));
-            else
-                diff_img = calc_img_diff(raw_ir(:,:,i), raw_ir(:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-            if i == 1
-                colormap(gray);% draw temperature IR image
-            end
-            
-        elseif ir_dimenstions == 4
-            
-            if diff == 0
-                imagesc(raw_ir(:,:,:,i));
-            else
-                diff_img = calc_img_diff(raw_ir(:,:,:,i), raw_ir(:,:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-        end
-        
-        imagesc(subplot(1,2,2));
-        
-        if vis_dimenstions == 3
-            
-            if diff == 0
-                imagesc(raw_vis(:,:,i)); % draw VIS image
-            else
-                diff_img = calc_img_diff(raw_vis(:,:,i), raw_vis(:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-            if i == 1
-                colormap(gray);% draw temperature IR image
-            end
-            
-        elseif vis_dimenstions == 4
-            
-            if diff == 0
-                imagesc(raw_vis(:,:,:,i)); % draw VIS image
-            else               
-                diff_img = calc_img_diff(raw_vis(:,:,:,i), raw_vis(:,:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-        end
-        
-    elseif mode == 0 % single channel view
-        
-        if ir_dimenstions == 3
-            
-            if diff == 0
-                imagesc(raw_ir(:,:,i));
-            else                
-                diff_img = calc_img_diff(raw_ir(:,:,i), raw_ir(:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-            if i == 1
-                colormap(gray);% draw temperature IR image
-            end
-            
-        elseif ir_dimenstions == 4
-            
-            if diff == 0
-                imagesc(raw_ir(:,:,:,i));
-            else                
-                diff_img = calc_img_diff(raw_ir(:,:,:,i), raw_ir(:,:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-        end
-        
-        if vis_dimenstions == 3
-            
-            if diff == 0
-                imagesc(raw_vis(:,:,i));
-            else               
-                diff_img = calc_img_diff(raw_vis(:,:,i), raw_vis(:,:,i + diff), 0);
-                imagesc(diff_img);
-            end
-            
-            if i == 1
-                colormap(gray);% draw temperature IR image
-            end
-            
-        elseif vis_dimenstions == 4
-            
-            if diff == 0
+        if channel(1) % case VIS
+            if vis_dim == 4
                 imagesc(raw_vis(:,:,:,i));
-            else
-                diff_img = calc_img_diff(raw_vis(:,:,:,i), raw_vis(:,:,:,i + diff), 0);
-                imagesc(diff_img);
+            elseif vis_dim ==3
+                imagesc(raw_vis(:,:,i));
+                colormap(gray);
+            end
+        elseif channel(2) % case NIR
+            if nir_dim == 4
+                imagesc(raw_nir(:,:,:,i));
+            elseif nir_dim ==3
+                imagesc(raw_nir(:,:,i));
+                colormap(gray);
+            end
+        elseif channel(3) % case IR
+            if ir_dim == 4
+                imagesc(raw_ir(:,:,:,i));
+            elseif ir_dim ==3
+                imagesc(raw_ir(:,:,i));
+                colormap(gray);
+            end
+        end
+        
+    elseif mode == 2
+        
+        if channel(1) && channel(2)% case VIS
+            
+            imagesc(subplot(1,2,1));
+            if vis_dim == 4
+                imagesc(raw_vis(:,:,:,i));
+            elseif vis_dim ==3
+                imagesc(raw_vis(:,:,i));
+                colormap(gray);
+            end
+            
+            imagesc(subplot(1,2,2));
+            if nir_dim == 4
+                imagesc(raw_nir(:,:,:,i));
+            elseif nir_dim ==3
+                imagesc(raw_nir(:,:,i));
+                colormap(gray);
+            end
+            
+        elseif channel(1) && channel(3)% case VIS
+            
+            imagesc(subplot(1,2,1));
+            if vis_dim == 4
+                imagesc(raw_vis(:,:,:,i));
+            elseif vis_dim ==3
+                imagesc(raw_vis(:,:,i));
+                colormap(gray);
+            end
+            
+            imagesc(subplot(1,2,2));
+            if ir_dim == 4
+                imagesc(raw_ir(:,:,:,i));
+            elseif ir_dim ==3
+                imagesc(raw_ir(:,:,i));
+                colormap(gray);
+            end
+            
+        elseif channel(2) && channel(3)% case VIS
+            
+            imagesc(subplot(1,2,1));
+            if nir_dim == 4
+                imagesc(raw_nir(:,:,:,i));
+            elseif nir_dim ==3
+                imagesc(raw_nir(:,:,i));
+                colormap(gray);
+            end
+            
+            imagesc(subplot(1,2,2));
+            if ir_dim == 4
+                imagesc(raw_ir(:,:,:,i));
+            elseif ir_dim ==3
+                imagesc(raw_ir(:,:,i));
+                colormap(gray);
             end
             
         end
         
+    elseif mode == 3
+        
+        imagesc(subplot(1,3,1));
+        if vis_dim == 4
+            imagesc(raw_vis(:,:,:,i));
+        elseif vis_dim ==3
+            imagesc(raw_vis(:,:,i));
+            colormap(gray);
+        end
+        imagesc(subplot(1,3,2));
+        if nir_dim == 4
+            imagesc(raw_nir(:,:,:,i));
+        elseif nir_dim ==3
+            imagesc(raw_nir(:,:,i));
+            colormap(gray);
+        end
+        imagesc(subplot(1,3,3));
+        if ir_dim == 4
+            imagesc(raw_ir(:,:,:,i));
+        elseif ir_dim ==3
+            imagesc(raw_ir(:,:,i));
+            colormap(gray);
+        end
     end
     
-    %sum_diff_img = sum_diff_img + uint16(diff_img);
-    %frame_counter = frame_counter + 1;
     drawnow();
     t = toc(tStart);
     
@@ -196,25 +201,18 @@ while(i < (len - diff)) & (ishandle(fig) == 1)
             i = i + 1;
         else
             i = i + diff;
-        
+            
         end
         tStart = tic;
         
     end
     
 end % end while loop
+
+
 %toc(tTotal)
-if ishandle(fig) == 1
+if ishandle(fig)
     close(fig);
 end
 
-
-%{
-figure();
-mini = min(min(sum_diff_img));
-maxi = max(max(sum_diff_img));
-sum_diff_img_norm = sum_diff_img - mini;
-sum_diff_img_norm = 255*(sum_diff_img_norm ./ maxi);
-imshow(sum_diff_img_norm,[])
-%}
 end

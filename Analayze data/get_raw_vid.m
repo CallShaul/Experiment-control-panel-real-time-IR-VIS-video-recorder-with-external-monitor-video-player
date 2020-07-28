@@ -74,7 +74,7 @@ end
 if exist(vars(nir), 'var')
     eval(['raw_nir = ', char(vars(nir)),';']);
 else
-    raw_vis = 0;
+    raw_nir = 0;
 end
 
 if exist(vars(ir), 'var')

@@ -118,14 +118,16 @@ CWT_plot(vis, 'VIS', plotMax, filter_bank, subplot, filter_type, cutoff_freq);
 %% Play video
 
 % video file name to open:
-subFolder = 'E:\Thesis data\';
+%subFolder = 'E:\Thesis data\';
+subFolder = 'Recordings';
 file_name = 'Shauls experiment.mat';
 file2load = fullfile(subFolder,file_name);
 
-fast_play = 1; % 0: regular / manual, 1: fast
+channel = [1, 1, 1]; % [VIS, NIR, IR] 0: yes, 1: no
+fast_play = 0; % 0: regular / manual, 1: fast
 segment_time = 0; % time between frames [sec]
 show_differences = 0; % 0-1: no (regular), >2: show frame differences between this value.
-video_number = 51; % video number to play
+video_idx = 51; % video number to play
 
-play(file2load, 'IR', video_number, fast_play, segment_time, show_differences, order_vid_idx);
+play(file2load, channel, video_idx, fast_play, segment_time, show_differences);
 
