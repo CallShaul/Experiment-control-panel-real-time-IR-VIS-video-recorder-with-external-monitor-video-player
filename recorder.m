@@ -231,6 +231,7 @@ tStart = tic;
 delay_corrector = str2double(app.FPSdelaycorrectorEditField.Value);
 delay_corrector_step = str2double(app.FPSdelaycorrectorstepEditField.Value);
 playFlag = 2; % 2: initial intro screen mode, 1: a video is playing, 0: black screen is playing
+LWIR_frame_err_idx = 1;
 
 if ~exist('playlist', 'var')
     playlist = 0;
@@ -323,11 +324,19 @@ while(viewer_is_running) % main loop
     
     if properties.LWIR_camera == 1 % if needs to get frame from IR camera
         
-        if properties.LWIR_tempORcolor == 1
-            THM = single(IRInterface.get_thermal()); % get gray image from IR camera
-            frame_IR = ((THM - 10000) ./ 100); % change values to Celsius temperature values
-        elseif properties.LWIR_tempORcolor == 0
-            frame_IR = (IRInterface.get_palette()); % get color image from IR camera
+        try
+            if properties.LWIR_tempORcolor == 1
+                THM = single(IRInterface.get_thermal()); % get gray image from IR camera
+                frame_IR = ((THM - 10000) ./ 100); % change values to Celsius temperature values
+            elseif properties.LWIR_tempORcolor == 0
+                frame_IR = (IRInterface.get_palette()); % get color image from IR camera
+            end
+        catch
+            if LWIR_frame_err_idx == 1
+                disp(['Error getting frame from IR camera! (time: ', num2str(t(idx)/1000), ')'])
+            end
+            properties.LWIR_frame_err(LWIR_frame_err_idx) = t(idx);
+            LWIR_frame_err_idx = LWIR_frame_err_idx + 1;
         end
         
     end
