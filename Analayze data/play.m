@@ -32,7 +32,11 @@ if diff
     diff = 0;
 end
 
-frame_rate = properties.play_list(video_idx, 8);
+if isfield(properties, 'play_list')
+    frame_rate = properties.play_list(video_idx, 8);
+else
+    frame_rate = properties.constantFrameRate;
+end
 
 if segment_time == 0
     segment_time = 1/frame_rate; % original frame time

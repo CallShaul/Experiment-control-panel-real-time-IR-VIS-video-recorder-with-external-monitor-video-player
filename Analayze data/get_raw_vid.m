@@ -9,16 +9,30 @@ nir = 0;
 ir = 0;
 
 file_details = whos('-file', file2load); % get variables list from data file
-max_data_vars = size(properties.var_list, 2);
+if isfield(properties, 'var_list')
+    max_data_vars = size(properties.var_list, 2);
+else
+    how_many_cams = properties.RGB_camera + properties.NIR_camera + properties.LWIR_camera;
+    max_data_vars = (size(file_details, 1)-1) / how_many_cams;  
+end
 
-if properties.RGB_camera
-    cam_num = cam_num + 1;
-end
-if properties.NIR_camera
-    cam_num = cam_num + 1;
-end
-if properties.LWIR_camera
-    cam_num = cam_num + 1;
+if isfield(properties, 'RGB_camera')
+    if properties.RGB_camera
+        cam_num = cam_num + 1;
+    end
+    if properties.NIR_camera
+        cam_num = cam_num + 1;
+    end
+    if properties.LWIR_camera
+        cam_num = cam_num + 1;
+    end
+else
+    if size(properties.VIS_resolution, 2) == 2
+        cam_num = cam_num + 1;
+    end
+    if size(properties.IR_resolution, 2) == 2
+        cam_num = cam_num + 1;
+    end
 end
 
 while idx <= max_data_vars && vid_num ~= looking4
@@ -65,20 +79,32 @@ if ir ~= 0 && channel(3) == 1
     load(file2load, vars(ir));
 end
 
-if exist(vars(vis), 'var')
-    eval(['raw_vis = ', char(vars(vis)),';']);
+if vis ~= 0
+    if exist(vars(vis), 'var')
+        eval(['raw_vis = ', char(vars(vis)),';']);
+    else
+        raw_vis = 0;
+    end
 else
     raw_vis = 0;
 end
 
-if exist(vars(nir), 'var')
-    eval(['raw_nir = ', char(vars(nir)),';']);
+if nir ~= 0
+    if exist(vars(nir), 'var')
+        eval(['raw_nir = ', char(vars(nir)),';']);
+    else
+        raw_nir = 0;
+    end
 else
     raw_nir = 0;
 end
 
-if exist(vars(ir), 'var')
-    eval(['raw_ir = ', char(vars(ir)), ';']);
+if ir ~= 0
+    if exist(vars(ir), 'var')
+        eval(['raw_ir = ', char(vars(ir)), ';']);
+    else
+        raw_ir = 0;
+    end
 else
     raw_ir = 0;
 end

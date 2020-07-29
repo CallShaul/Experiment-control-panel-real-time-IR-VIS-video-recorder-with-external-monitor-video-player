@@ -1,35 +1,46 @@
 function bar_plot_summary(sig_avg, sig_max, sig_min, sig_std, channel, dir_file_list,...
-    files2process, mode, roi_labels, emotions_list)
+    files2process, mode, roi_labels, emotions_list, roi, roi_found_err)
 
 sub = 5; % number of emotions
-vids_num = size(sig_avg, 2);
+%vids_num = size(sig_avg, 2);
 roi_num = size(sig_avg, 3);
-vids2process = 1:vids_num;
+%vids2process = 1:vids_num;
 batch = 1;
 sub_count = 1;
 i_counter = 1;
 emotions_letters = ['N'; 'D'; 'F'; 'A'; 'S'];
+exp = size(emotions_list, 2);
+emot_idx = ones(sub + 1, exp);
 
-emotions_list = emotions_list(:,1);
-last = emotions_list(1, 1);
-emot_idx = ones(sub + 1, 1);
-for i=1:size(emotions_list, 1)
-    if ~strcmp(last, emotions_list(i, 1))
-        last = emotions_list(i, 1);
-        emot_idx(i_counter+1) = i;
-        i_counter = i_counter + 1;
+for k=1:exp
+    
+    emotions_list_vec = emotions_list(:,k);
+    emotions_list_vec(cellfun('isempty',emotions_list_vec)) = [];
+    last = emotions_list_vec(1, 1);
+    i_counter = 1;
+    
+    for i=1:size(emotions_list_vec, 1)
+        if ~strcmp(last, emotions_list_vec(i, 1))
+            last = emotions_list_vec(i, 1);
+            emot_idx(i_counter+1, k) = i;
+            i_counter = i_counter + 1;
+        end
     end
+
 end
 
 i_counter = 1;
 
-for i=1:size(emot_idx,1)-1
-    signal_avg(:,i,:) = mean(sig_avg(:,emot_idx(i):emot_idx(i+1), :), 2);
-    signal_max(:,i,:) = max(sig_max(:,emot_idx(i):emot_idx(i+1), :), [], 2);
-    signal_min(:,i,:) = min(sig_min(:,emot_idx(i):emot_idx(i+1), :), [], 2);
-    signal_std(:,i,:) = std(sig_std(:,emot_idx(i):emot_idx(i+1), :), 0, 2);
-    %     i_counter = i;
-    %     sub_count = sub_count + 1;
+for k=1:exp
+    sig_vec = sig_avg(k, :);
+    sig_vec(sig_vec == 0) = [];
+    siglen(k) = length(sig_vec);
+    for i=1:sub
+        signal_avg(k, i) = mean(sig_avg(k, emot_idx(i, k):emot_idx(i+1, k), :), 2);
+        signal_max(k, i) = max(sig_max(k, emot_idx(i, k):emot_idx(i+1, k), :), [], 2);
+        signal_min(k, i) = min(sig_min(k, emot_idx(i, k):emot_idx(i+1, k), :), [], 2);
+        signal_std(k, i) = std(sig_std(k, emot_idx(i, k):emot_idx(i+1, k), :), 0, 2);
+    end
 end
 
 errlow = signal_avg - signal_min;
@@ -48,7 +59,8 @@ nan_loc = isnan(bar_data);
 
 k = 1;
 for i = files2process
-    xvec(k) = categorical({append('(', num2str(k) ,') ' , dir_file_list(i).name)});
+    xvec(k) = categorical({append('(', num2str(k) ,') ' , dir_file_list(i).name,...
+        ' [', num2str(siglen(k)), ' vids]')});
     first_nan = find(nan_loc(k,:)==1);
     if isempty(first_nan)
         legend_std(k) = std(bar_data(k,:));
@@ -63,8 +75,11 @@ end
 
 for i=1:roi_num
     
-    str = ['Roi: ', char(roi_labels(i)), ', Videos: ', num2str(vids2process(1)), '-', num2str(vids_num+vids2process(1)-1),...
-        ', Channel: ', channel];
+    if roi == 0 || roi_found_err == 1
+        str = ['Roi: ', char(roi_labels(i)), ', Channel: ', channel];
+    else
+        str = ['Roi: ', char(roi_labels(roi)), ', Channel: ', channel];
+    end
     figure('Name', str); % opens a new figure window
     sgtitle(str); % plots the emot_idx-title
     
@@ -82,17 +97,9 @@ for i=1:roi_num
         xtips1 = double(b(k).XEndPoints);
         ytips1 = double(b(k).YEndPoints);
         labels1 = emotions_letters(k);
-        text(xtips1,ytips1,labels1,'HorizontalAlignment','center',...
-            'VerticalAlignment','bottom')
+        text(xtips1,ytips1,labels1,'HorizontalAlignment','center', 'VerticalAlignment','bottom')
     end
-    
-    if k == 1
-        y_loc = max(max(max(bar_data)));
-        text(0, double(y_loc), std_txt)
-        text(0, double(y_loc*0.8), range_txt)
-    end
-    
-    %title(str); % print signal's title
+
     xlabel('File name');
     mini = min(min(bar_data(:,:,i)));
     maxi = max(max(bar_data(:,:,i)));
@@ -105,13 +112,17 @@ for i=1:roi_num
         ylabel('Gray level');
     end
     
-    sub_count = sub_count + 1;
+    if i == 1
+        y_loc = max(max(max(bar_data)));
+        text(0, double(y_loc), std_txt)
+        text(0, double(y_loc*0.97), range_txt)
+    end
     
+    sub_count = sub_count + 1;
     if mod(i_counter, sub) == 0 && i ~= roi_num 
         batch = batch + 1;
         sub_count = 1;
     end
-    
     i_counter = i_counter + 1;
     
 end

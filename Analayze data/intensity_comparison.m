@@ -1,6 +1,6 @@
 function [var_names_list, emotions_list] = intensity_comparison(channel, folder, files2process,...
     disp_last_frames, mode, comparison, ir_back_sub, group_by,...
-    filter_type, cutoff_freq)
+    filter_type, cutoff_freq, roi)
 
 if folder(end) ~= '\' % case last backslesh is missing
     folder = [folder, '\'];
@@ -11,6 +11,8 @@ dir_file_list = dir_file_list(~ismember({dir_file_list.name},{'.','..'}));
 channel = upper(channel);
 k_counter = 1;
 vids2process = 1:1000;
+ir_back_sub_err = 0;
+roi_found_err = 0;
 
 for k = files2process
     
@@ -63,8 +65,21 @@ for k = files2process
                 var_names_list(i_counter, k_counter) = string(data{i}.var_name);
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('sig = data{i}.sig;'); % get the desired signal
-    
-                fps = data{1, 1}.play_list(i,8);
+                
+                if roi ~= 0
+                    if roi <= size(sig, 2)
+                        sig = sig(:, roi);
+                    elseif roi_found_err == 0
+                        disp('ROI index have not been found, displaying all ROIs in data file')
+                        roi_found_err = 1;
+                    end
+                end
+                
+                if isfield(data, 'play_list')
+                    fps = data{1, 1}.play_list(i,8);
+                else
+                    fps = data{1, 1}.frame_rate;
+                end
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
                         strcmp(filter_type, 'bandpass') || strcmp(filter_type, 'median') ||...
@@ -84,7 +99,11 @@ for k = files2process
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('R = data{i}.R;'); % get the desired signal
 
-                fps = data{1, 1}.play_list(i,8);
+                if isfield(data, 'play_list')
+                    fps = data{1, 1}.play_list(i,8);
+                else
+                    fps = data{1, 1}.frame_rate;
+                end
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
                         strcmp(filter_type, 'bandpass') || strcmp(filter_type, 'median') ||...
@@ -104,7 +123,11 @@ for k = files2process
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('G = data{i}.G;'); % get the desired signal
 
-                fps = data{1, 1}.play_list(i,8);
+                if isfield(data, 'play_list')
+                    fps = data{1, 1}.play_list(i,8);
+                else
+                    fps = data{1, 1}.frame_rate;
+                end
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
                         strcmp(filter_type, 'bandpass') || strcmp(filter_type, 'median') ||...
@@ -124,7 +147,11 @@ for k = files2process
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('B = data{i}.B;'); % get the desired signal
 
-                fps = data{1, 1}.play_list(i,8);
+                if isfield(data, 'play_list')
+                    fps = data{1, 1}.play_list(i,8);
+                else
+                    fps = data{1, 1}.frame_rate;
+                end
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
                         strcmp(filter_type, 'bandpass') || strcmp(filter_type, 'median') ||...
@@ -142,17 +169,35 @@ for k = files2process
                 var_names_list(i_counter, k_counter) = string(data{i}.var_name);
                 emotions_list(i_counter, k_counter) = string(data{i}.expected_emotion);
                 eval('sig = data{i}.sig;'); % get the desired signal
-                
+
                 if ir_back_sub ~= 0
-                    temp_background = sig(:, ir_back_sub);
-                    temp_initial_values = sig(1, :);
-                    sig = sig - sig(:, ir_back_sub);
-                    sig = sig - mean(sig);
-                    sig = sig + temp_initial_values;
-                    sig(:, ir_back_sub) = temp_background;
+                    if ir_back_sub <= size(sig, 2)
+                        temp_background = sig(:, ir_back_sub);
+                        temp_initial_values = sig(1, :);
+                        sig = sig - sig(:, ir_back_sub);
+                        sig = sig - mean(sig);
+                        sig = sig + temp_initial_values;
+                        sig(:, ir_back_sub) = temp_background;
+                    elseif ir_back_sub_err == 0
+                        disp('No Infra-red background substraction was performed.')
+                        ir_back_sub_err = 1;
+                    end
                 end
                 
-                fps = data{1, 1}.play_list(i,8);
+                if roi ~= 0
+                    if roi <= size(sig, 2)
+                        sig = sig(:, roi);
+                    elseif roi_found_err == 0
+                        disp('ROI index have not been found, displaying all ROIs in data file')
+                        roi_found_err = 1;
+                    end
+                end
+                
+                if isfield(data, 'play_list')
+                    fps = data{1, 1}.play_list(i,8);
+                else
+                    fps = data{1, 1}.frame_rate;
+                end
                 
                 if strcmp(filter_type, 'low') || strcmp(filter_type, 'high') ||...
                         strcmp(filter_type, 'bandpass') || strcmp(filter_type, 'median') ||...
@@ -207,11 +252,12 @@ end
 if strcmp(group_by, 'Played_order') || strcmp(group_by, 'Video_index') || strcmp(group_by, 'Emotions')
 
     if strcmp(comparison, 'roi')
-        bar_plot_roi(sig_avg, sig_max, sig_min, sig_std, ch_name, dir_file_list, files2process, mode, roi_labels, group_by)
+        bar_plot_roi(sig_avg, sig_max, sig_min, sig_std, ch_name, dir_file_list, files2process, mode, roi_labels, group_by, roi)
     elseif strcmp(comparison, 'file')
-        bar_plot_file(sig_avg, sig_max, sig_min, sig_std, ch_name, dir_file_list, files2process, mode, roi_labels, group_by)
+        bar_plot_file(sig_avg, sig_max, sig_min, sig_std, ch_name, dir_file_list, files2process, mode, roi_labels, group_by, roi)
     elseif strcmp(comparison, 'summary')
-        bar_plot_summary(sig_avg, sig_max, sig_min, sig_std, ch_name, dir_file_list, files2process, mode, roi_labels, emotions_list)
+        bar_plot_summary(sig_avg, sig_max, sig_min, sig_std, ch_name, dir_file_list, files2process, mode,...
+            roi_labels, emotions_list, roi, roi_found_err)
     end
 
 end

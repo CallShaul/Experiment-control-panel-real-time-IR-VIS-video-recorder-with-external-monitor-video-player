@@ -1,7 +1,10 @@
 function [vis, nir, ir] = get_data(file_name, save_it, channel, roi_labels, remarks)
 tic
 
-crop_cors = size(roi_labels, 2);
+num_crop_cors = size(roi_labels, 2);
+vis_crop_cors = num_crop_cors;
+nir_crop_cors = num_crop_cors;
+ir_crop_cors = num_crop_cors;
 
 max_loop_run = 1000; % 1000: scan all
 final_img_disp = 0; % display last frame of each video: 0 = no, 1 = yes.
@@ -13,8 +16,8 @@ enhance_image = 0; % enhancment of the image before processing: 0 = no, 1 = yes.
 %normalize = 1; % normalize graylevel. 0 = no, 1 = yes.
 
 % video file name to open:
-subFolder = 'Recordings\';
-file2load = fullfile(subFolder,file_name);
+subFolder = 'D:\Experiment data\';
+file2load = fullfile(subFolder, file_name);
 file_details = whos('-file', file2load);
 calc_count = 1;
 k = 1;
@@ -27,19 +30,17 @@ catch
 end
 
 load(file2load, 'properties')
-max_data_vars = size(properties.var_list, 2);
+if isfield(properties, 'var_list')
+    max_data_vars = size(properties.var_list, 2);
+else
+    how_many_cams = properties.RGB_camera + properties.NIR_camera + properties.LWIR_camera;
+    max_data_vars = (size(file_details, 1)-1) / how_many_cams;  
+end
 
 for idx=1:max_loop_run
     
     [raw_vis, raw_nir, raw_ir, var_name, vars_idx] = get_raw_vid(file2load, idx, channel, properties); % get video from data file
-    
-    %%%%%%%%%% test >>
-    
-    %data = Hemoglobin_mapper(raw_vis, properties, file_name, var_name, idx, N, start_time,...
-    %    end_time, enhance_image, crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
-    
-    %%%%%%%%%% test >>
-    
+
     if ndims(raw_vis) > 2 || ndims(raw_nir) > 2 || ndims(raw_ir) > 2
         disp(['Calculating... ', num2str(calc_count), '/', num2str(max_data_vars), ' (',...
             num2str(round(((calc_count/max_data_vars)*100),2)), ' %)'])
@@ -47,32 +48,43 @@ for idx=1:max_loop_run
         calc_count = calc_count + 1;
     end
     
+    if exist('vis', 'var')
+        vis(cellfun('isempty',vis)) = [];
+    end
+    if exist('nir', 'var')
+        nir(cellfun('isempty',nir)) = [];
+    end
+    if exist('ir', 'var')
+        ir(cellfun('isempty',ir)) = [];
+    end
+    
     if ndims(raw_vis) > 2 && channel(1) == 1
-        if exist('vis','var')
-            crop_cors = vis{1, 1}.crop_cors;
+        if exist('vis','var') && isfield(vis{size(vis, 2)}, 'crop_cors')
+            vis_crop_cors = vis{size(vis, 2)}.crop_cors;
         end
         vis{k} = roi_intensity(raw_vis, properties, file_name, var_name(vars_idx(1)), idx, N, start_time,...
-            end_time, enhance_image, crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
+            end_time, enhance_image, vis_crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
     elseif channel(1) == 1
         vis{k} = [];
     end
     
     if ndims(raw_nir) > 2 && channel(2) == 1
-        if exist('nir','var')
-            crop_cors = nir{1, 1}.crop_cors;
+        if exist('nir','var') && isfield(nir{size(nir, 2)}, 'crop_cors')
+            nir_crop_cors = nir{size(nir, 2)}.crop_cors;
         end
+
         nir{k} = roi_intensity(raw_nir, properties, file_name, var_name(vars_idx(2)), idx, N, start_time,...
-            end_time, enhance_image, crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
+            end_time, enhance_image, nir_crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
     elseif channel(2) == 1
         nir{k} = [];
     end
     
     if ndims(raw_ir) > 2 && channel(3) == 1
-        if exist('ir','var')
-            crop_cors = ir{1, 1}.crop_cors;
+        if exist('ir','var') && isfield(ir{size(ir, 2)}, 'crop_cors')
+            ir_crop_cors = ir{size(ir, 2)}.crop_cors;
         end
         ir{k} = roi_intensity(raw_ir, properties, file_name, var_name(vars_idx(3)), idx, N, start_time,...
-            end_time, enhance_image, crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
+            end_time, enhance_image, ir_crop_cors, newFrameRate, final_img_disp, roi_labels, videos_idx_emotions);
     elseif channel(3) == 1
         ir{k} = [];
     end

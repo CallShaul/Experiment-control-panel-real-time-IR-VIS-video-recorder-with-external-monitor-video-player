@@ -6,7 +6,7 @@ tic
 
 %% Calculate ROI's pixel's intensity average
 
-file_name = 'Shauls experiment';
+file_name = 'FullPilot Sub4';
 save_it = 1; % 1: yes, 0: no
 roi_labels = ["Forehead", "Nose", "Left cheek", "Right cheek", "Lip", "Background"];
 %roi_labels = "All frame";
@@ -21,13 +21,14 @@ folder = 'Analayzed data\';
 dir_file_list = dir(folder);
 dir_file_list = dir_file_list(~ismember({dir_file_list.name},{'.','..'}));
 
-files2process = [15, 8];%[1, 18]; % choose indexes of data files to calc
+files2process = 1:5; %[1, 18]; % choose indexes of data files to calc
 
 channel = 'ir'; % VIS / NIR / IR / VISR / VISG / VISB / NIRR / NIRG / NIRB
 disp_last_frames = 0; % 1 / 0
 mode = 'avg'; % diff / avg / std
 comparison = 'summary'; % file / roi / summary
 group_by = 'Emotions'; % Played_order / Video_index / Emotions
+roi = 2; % choose roi index for the calculation
 ir_back_sub = 6; % 0: off, x: subtract ROI x from the others. (for IR data only!)
 
 filter_type = 'no'; % 'low' / 'high' / 'bandpass' / 'median' / 'dc' / 'no'
@@ -35,7 +36,7 @@ cutoff_freq = [0.8, 1.5]; % positive number in case filter is low / high. for ba
 
 [var_names_list, emotions_list] = intensity_comparison(channel, folder, files2process,...
     disp_last_frames, mode, comparison, ir_back_sub, group_by,...
-    filter_type, cutoff_freq);
+    filter_type, cutoff_freq, roi);
 
 %% Plot signal
 
@@ -119,15 +120,16 @@ CWT_plot(vis, 'VIS', plotMax, filter_bank, subplot, filter_type, cutoff_freq);
 
 % video file name to open:
 %subFolder = 'E:\Thesis data\';
-subFolder = 'Recordings';
-file_name = 'Shauls experiment.mat';
+subFolder = 'C:\Users\owner\Documents\GitHub\Experiment-control-panel-real-time-LWIR-NIR-RGB-video-recorder-with-external-monitor-video-player\Recordings';
+file_name = 'sub9';
 file2load = fullfile(subFolder,file_name);
+file_details = whos('-file', file2load); % get variables list from data file
 
 channel = [1, 1, 1]; % [VIS, NIR, IR] 0: yes, 1: no
 fast_play = 0; % 0: regular / manual, 1: fast
 segment_time = 0; % time between frames [sec]
 show_differences = 0; % 0-1: no (regular), >2: show frame differences between this value.
-video_idx = 51; % video number to play
+video_idx = 95; % video number to play
 
 play(file2load, channel, video_idx, fast_play, segment_time, show_differences);
 
