@@ -1,4 +1,4 @@
-# Thermal-Visible-face-videos-recorder-with-UI: 
+# Multi-spectral-face-videos-recorder-with-UI: 
 Thermal and Visible video recorder software and player, designed to work with up to 3 cameras - Long Wave Infra Red, Near Infra Red and RGB - visible spectrum camera while playing emotions stimulating videos on another screen.
 
 Written for a combined research of the psychology and the electrical engineering department, Ben Gurion Univesity of the Negev, Israel.
