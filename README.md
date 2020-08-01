@@ -10,7 +10,7 @@ https://github.com/CallShaul/Experiment-control-panel-real-time-LWIR-NIR-RGB-vid
 Can be used for the extraction of various physiological signals such as heart rate, heart rate variability, respiratory rate Hemoglobine concentration and more,
 Run analyze.m to start.
 
-# RGB - Visible spectrum camera:
+# Visible spectrum (RGB) camera:
 I recommend using mirrorless camera such as Sony alpha 6000, with USB-HDMI capture card:
 It is best to record the face video's with F/# value not too low! (about 2.2 - 2.8 should be ok) so the whole face will be kept in focus during the recording. It is also reccomended to use as low ISO value as possible, to reduce sensor noise - so good lightning is required for that. it is also recommended to cool the USB-HDMI capture card with active or passive heat sink in case of a long recording duration.
 
