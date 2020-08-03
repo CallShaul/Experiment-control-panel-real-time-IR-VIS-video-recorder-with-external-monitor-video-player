@@ -1,4 +1,4 @@
-function err = save_parameters(app, properties, filename, t, raw_timing, playlist)
+function [err, properties] = save_parameters(app, properties, filename, t, raw_timing, playlist)
 
 %try
 

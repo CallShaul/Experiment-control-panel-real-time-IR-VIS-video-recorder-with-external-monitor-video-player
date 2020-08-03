@@ -21,20 +21,22 @@ if properties.LWIR_camera == 1
     if strcmp(properties.LWIR_camera2connect, 'PI IMAGER') % case LWIR camera is OPTRIS PI450
         %try
         err = status(app, 'Connecting to IR camera...', 'g', 1, 0);
-
+        
         IRInterface = EvoIRMatlabInterface;
         IRViewer = EvoIRViewer; % initialize the viewer
         close(1); % closes the Evocortex special window, so a new "regular" figure window will be opnened.
         viewer_is_running = 1; % ok to run frame grabber loop
-
+        
         if ~IRInterface.connect()
             close all;
             err = status(app, 'Error connecting to IR camera.', 'r', 1, 1);
         end
-
+        
         %catch
         %err = status(app, 'Error connecting to IR camera.', 'r', 1, 1);
         %end
+    else
+        err = status(app, 'Error connecting to IR camera.', 'r', 1, 1);
     end
 end
 
@@ -80,7 +82,7 @@ if properties.NIR_camera == 1 && err == 0
         if properties.NIR_camera2gray == 1
             frame_NIR = rgb2gray(frame_NIR); % get imgage from VIS camera if needed and transform to gray
         end
-
+        
         viewer_is_running = 1; % ok to run frame grabber loop
     catch
         err = status(app, 'Error connecting to NIR camera.', 'r', 1, 1);
@@ -104,11 +106,6 @@ if properties.playVideofiles == 1 && err == 0
     catch
         err = status(app, 'Error connecting to VLC player.', 'r', 1, 1);
     end
-    
-    %     if properties.popup == 1  % if popup is desired - get location and call function
-    %         intro_popup_fig = popup_fig_finder(app, 'intro_popup.mlapp', 'Intro Pop-up', true); % opens popup UI figure with always-on-top mode
-    %         playFlag = 3; % 3 stands for: waiting for user to press OK button on the intro pop-up window.
-    %     end
     
     %try
     
@@ -231,7 +228,9 @@ tStart = tic;
 delay_corrector = str2double(app.FPSdelaycorrectorEditField.Value);
 delay_corrector_step = str2double(app.FPSdelaycorrectorstepEditField.Value);
 playFlag = 2; % 2: initial intro screen mode, 1: a video is playing, 0: black screen is playing
-LWIR_frame_err_idx = 1;
+properties.RGB_frame_err = 0;
+properties.NIR_frame_err = 0;
+properties.LWIR_frame_err = 0;
 
 if ~exist('playlist', 'var')
     playlist = 0;
@@ -257,7 +256,7 @@ if properties.RGB_camera == 0 && properties.NIR_camera == 0 && properties.LWIR_c
 end
 
 if ~exist('IRViewer', 'var')
-   IRViewer = 0; 
+    IRViewer = 0;
 end
 
 if properties.warm_up == 1 && err == 0 % delay recording if needed
@@ -267,9 +266,12 @@ end
 
 if properties.LWIR_camera == 1 && err == 0
     IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
+    pause(0.5); % waits for IR camera to finish flag process
 end
 
-if properties.save_data == 1 && playFlag == 2 && err == 0
+if properties.playVideofiles == 1 && properties.initialIntroScreen ~= 0 && playFlag == 2 && err == 0
+    err = status(app, 'Displaying initial intro screen...', 'g', 1, 0);
+elseif properties.save_data == 1 && playFlag == 2 && err == 0
     err = status(app, 'Recording...', 'g', 1, 0);
 elseif properties.save_data == 0 && playFlag == 2 && err == 0
     err = status(app, 'Playing live stream...', 'g', 1, 0);
@@ -296,47 +298,83 @@ while(viewer_is_running) % main loop
     
     %% Get RGB / NIR / IR frame from camera
     
-    if properties.RGB_camera == 1 % if needs to get frame from VIS camera
+    if (properties.popup == 1 && feedback.status == 1) || ...
+            (properties.playVideofiles == 1 && playFlag == 0) || ...
+            (properties.playVideofiles == 1 && playFlag == 2)
         
-        frame_VIS = snapshot(rgb_cam); % get imgage from VIS camera if needed
-        if properties.RGB_crop_cor ~= 0
-            frame_VIS = imcrop(frame_VIS, rgb_crop_cor); % cropping the frame
-        end
-        if properties.RGB_camera2gray == 1
-            frame_VIS = rgb2gray(frame_VIS); % get imgage from VIS camera if needed and transform to gray
-        end
-
-    end
-    
-    if properties.NIR_camera == 1 % if needs to get frame from VIS camera
+        t(idx) = (round(toc(tStart)*1000)); % saves time delta
         
-        frame_NIR = snapshot(nir_cam); % get imgage from NIR camera if needed
-        if properties.NIR_crop_cor ~= 0
-            frame_NIR = imcrop(frame_NIR, nir_crop_cor); % cropping the frame
-        end
-        if properties.NIR_camera2gray == 1
-            frame_NIR = rgb2gray(frame_NIR); % get imgage from VIS camera if needed and transform to gray
+    else % capture frames
+        
+        t(idx) = (round(toc(tStart)*1000)); % saves time delta
+        
+        if properties.RGB_camera == 1 && properties.RGB_frame_err == 0 % if needs to get frame from VIS camera
+            
+            %             if idx > 2
+            %                 disp([num2str(t(idx-1)), '. Capturing frame from RGB camera'])
+            %             end
+            
+            %             try
+            frame_VIS = snapshot(rgb_cam); % get imgage from VIS camera if needed
+            %             catch
+            %                 if properties.RGB_frame_err == 0
+            %                     disp(['Error getting frame from RGB camera! shutting camera down. (time: ', num2str(t(idx)/1000), ')'])
+            %                     properties.RGB_frame_err = t(idx); % save time stamp when this error occurred
+            %                 end
+            %             end
+            
+            if properties.RGB_crop_cor ~= 0
+                frame_VIS = imcrop(frame_VIS, rgb_crop_cor); % cropping the frame
+            end
+            if properties.RGB_camera2gray == 1
+                frame_VIS = rgb2gray(frame_VIS); % get imgage from VIS camera if needed and transform to gray
+            end
+            
         end
         
-    end
-    
-    t(idx) = (round(toc(tStart)*1000)); % saves time delta
-    
-    if properties.LWIR_camera == 1 % if needs to get frame from IR camera
+        if properties.NIR_camera == 1 && properties.NIR_frame_err == 0 % if needs to get frame from VIS camera
+            
+            %             if idx > 2
+            %                 disp([num2str(t(idx-1)), '. Capturing frame from NIR camera'])
+            %             end
+            
+            %             try
+            frame_NIR = snapshot(nir_cam); % get imgage from NIR camera if needed
+            %             catch
+            %                 if properties.NIR_frame_err == 0
+            %                     disp(['Error getting frame from NIR camera! shutting camera down. (time: ', num2str(t(idx)/1000), ')'])
+            %                     properties.NIR_frame_err = t(idx); % save time stamp when this error occurred
+            %                 end
+            %             end
+            
+            if properties.NIR_crop_cor ~= 0
+                frame_NIR = imcrop(frame_NIR, nir_crop_cor); % cropping the frame
+            end
+            if properties.NIR_camera2gray == 1
+                frame_NIR = rgb2gray(frame_NIR); % get imgage from VIS camera if needed and transform to gray
+            end
+            
+        end
         
-        try
+        if properties.LWIR_camera == 1 && properties.LWIR_frame_err == 0 % if needs to get frame from IR camera
+            
+            %             if idx > 2
+            %                 disp([num2str(t(idx-1)), '. Capturing frame from LWIR camera'])
+            %             end
+            
+            %             try
             if properties.LWIR_tempORcolor == 1
                 THM = single(IRInterface.get_thermal()); % get gray image from IR camera
                 frame_IR = ((THM - 10000) ./ 100); % change values to Celsius temperature values
             elseif properties.LWIR_tempORcolor == 0
                 frame_IR = (IRInterface.get_palette()); % get color image from IR camera
             end
-        catch
-            if LWIR_frame_err_idx == 1
-                disp(['Error getting frame from IR camera! (time: ', num2str(t(idx)/1000), ')'])
-            end
-            properties.LWIR_frame_err(LWIR_frame_err_idx) = t(idx);
-            LWIR_frame_err_idx = LWIR_frame_err_idx + 1;
+            %             catch
+            %                 if properties.LWIR_frame_err == 0
+            %                     disp(['Error getting frame from IR camera! shutting camera down. (time: ', num2str(t(idx)/1000), ')'])
+            %                     properties.LWIR_frame_err = t(idx); % save time stamp when this error occurred
+            %                 end
+            %             end
         end
         
     end
@@ -349,8 +387,10 @@ while(viewer_is_running) % main loop
         saved_frames_counter = saved_frames_counter + 1;
         
         try
-            
-            if properties.RGB_camera == 1
+            %             if idx > 2
+            %                 disp([num2str(t(idx-1)), '. Storing RGB buffer to RAM'])
+            %             end
+            if properties.RGB_camera == 1 && properties.RGB_frame_err == 0
                 if properties.RGB_camera2gray == 1
                     buffer_VIS(:,:,buff_idx) = frame_VIS; % storing VIS camera gray image
                 else
@@ -358,7 +398,10 @@ while(viewer_is_running) % main loop
                 end
             end
             
-            if properties.NIR_camera == 1
+            %             if idx > 2
+            %                 disp([num2str(t(idx-1)), '. Storing NIR buffer to RAM'])
+            %             end
+            if properties.NIR_camera == 1 && properties.NIR_frame_err == 0
                 if properties.NIR_camera2gray == 1
                     buffer_NIR(:,:,buff_idx) = frame_NIR; % storing VIS camera gray image
                 else
@@ -366,7 +409,10 @@ while(viewer_is_running) % main loop
                 end
             end
             
-            if properties.LWIR_camera == 1
+            %             if idx > 2
+            %                 disp([num2str(t(idx-1)), '. Storing LWIR buffer to RAM'])
+            %             end
+            if properties.LWIR_camera == 1 && properties.LWIR_frame_err == 0
                 if properties.LWIR_tempORcolor == 1
                     buffer_IR(:,:,buff_idx) = frame_IR; % storing IR camera temperature image
                 else
@@ -448,6 +494,10 @@ while(viewer_is_running) % main loop
     
     %% Play videos (VLC) [and save buffer!]
     
+    %     if idx > 2
+    %         disp([num2str(t(idx-1)), '. Entering play video area'])
+    %     end
+    
     if properties.playVideofiles == 1
         
         if videosPlayed == list_length && feedback.status == 0 && last_popup_stat == 1 && properties.popup == 1
@@ -469,15 +519,22 @@ while(viewer_is_running) % main loop
         if t(idx) - t(tLast_play) >= (properties.pauseTime*1000 - 1000) && playFlag == 0 ... % flags LWIR camera 1 sec before new video starts
                 && (t(idx) - t(tLast_flag) >= 2000) && properties.flag_IR_camera_on_black == 1 ...
                 && properties.LWIR_camera == 1
-
-            IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
-            tLast_flag = idx; % saves current flag time
+            
+            if properties.save_data == 1 && properties.popup == 1 && feedback.status == 0 && last_popup_stat == 0
+                IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
+                tLast_flag = idx; % saves current flag time
+                pause(0.5); % waits for IR camera to finish flag process
+            elseif properties.popup == 0
+                IRViewer.trigger_shutter_flag(); % triggers flag (temperature drift reset)
+                tLast_flag = idx; % saves current flag time
+                pause(0.5); % waits for IR camera to finish flag process
+            end
             
         end
         
         if (t(idx) - t(tLast_play) >= properties.pauseTime*1000 && playFlag == 0 &&...
                 videosPlayed < list_length) || (playFlag == 0 && videosPlayed == 0) % checks if it's time to play a video
-
+            
             if properties.popup == 1 % case need to wait for popup feedback
                 
                 if feedback.status == 0
@@ -534,7 +591,7 @@ while(viewer_is_running) % main loop
             video_idx = video_idx + 1; % new line at playlist structure
             playFlag = 0; % marks next time to play a video
             tLast_play = idx; % saves the index of the last time found
-
+            
             if video_idx <= list_length && properties.play_mode == 0
                 properties.playTime = playlist(video_idx).duration; % save length of next video - if exists
             end
@@ -546,8 +603,10 @@ while(viewer_is_running) % main loop
                     vlc.play('final_msg.png'); % display last black screen
                 end
                 
-                err = save_buffer(app, properties, filename, playlist, buffer_VIS, buffer_NIR ,buffer_IR, video_idx-1, buff_idx); % update data to mat file
+                [err, properties] = save_buffer(app, properties, filename, playlist, buffer_VIS, buffer_NIR ,buffer_IR,...
+                    properties.RGB_frame_err, properties.NIR_frame_err, properties.LWIR_frame_err, video_idx-1, buff_idx); % update data to mat file
                 buff_idx = 0;
+                
             end
             
         end
@@ -574,6 +633,7 @@ while(viewer_is_running) % main loop
     end
     
     %% Force end
+    
     if properties.force_end == 1
         
         if properties.force_end_seconds == 1 && t(idx) - t(1) >= properties.force_end_period * 1000 ||...
@@ -584,7 +644,13 @@ while(viewer_is_running) % main loop
     end
     
     %% Elpased time is larger then 1 sec
+    
+    %     if idx > 2
+    %         disp([num2str(t(idx-1)), '. 1 sec check area'])
+    %     end
+    
     if t(idx) - t(tLast_display) >= 1000 % checks if elpased time is larger then 1 sec
+        
         timing(timing_idx,1) = (t(idx) / 1000);
         timing(timing_idx,2) = frameCount;
         
@@ -592,11 +658,13 @@ while(viewer_is_running) % main loop
             timing(timing_idx,3) = video_idx;
         end
         
+        if properties.constantFrameRate ~= 0
+            timing(timing_idx,4) = delay_corrector;
+        end
+        
         try
-            
             app.FPS_status.Text = sprintf('%s', num2str(timing(timing_idx,2))); % updates frame rate
             app.Status2.Text = sprintf('%s', num2str(t(idx) / 1000)); % updates elapsed time
-            
         catch
         end
         
@@ -604,17 +672,22 @@ while(viewer_is_running) % main loop
             vlc.Fullscreen = 'on'; % makes sure VLC player is at fullscreen mode (every second)
         end
         
-            if timing(end, 2) ~= properties.constantFrameRate % perform minor time delay adjustments to get accurate FPS
-                if timing(end, 2) > properties.constantFrameRate
-                    delay_corrector = delay_corrector + delay_corrector_step; % FPS is too high - increase delay by 0.1% between frames
-                elseif timing(end, 2) < properties.constantFrameRate && delay_corrector > 0
-                    delay_corrector = delay_corrector - delay_corrector_step; % FPS is too low - reduce delay by 0.1% between frames
-                end
-                if delay_corrector < 0 
-                    delay_corrector = 0; % make sure delay_corrector will never be negative
-                end
-                app.FPSdelaycorrectorEditField.Value = num2str(delay_corrector);
+        if timing(end, 2) ~= properties.constantFrameRate && properties.constantFrameRate ~= 0 ... % perform minor time delay adjustments to get accurate FPS
+                && playFlag == 1 && timing_idx > 3 && delay_corrector_step ~= 0
+            
+            if timing(end, 2) > properties.constantFrameRate && ...
+                    timing(timing_idx,3) == timing(timing_idx-1,3) && timing(timing_idx,3) == timing(timing_idx-2,3)
+                delay_corrector = delay_corrector + delay_corrector_step; % FPS is too high - increase delay by 0.1% between frames
+            elseif timing(end, 2) < properties.constantFrameRate && delay_corrector > 0 && ...
+                    timing(timing_idx,3) == timing(timing_idx-1,3) && timing(timing_idx,3) == timing(timing_idx-2,3)
+                delay_corrector = delay_corrector - delay_corrector_step; % FPS is too low - reduce delay by 0.1% between frames
             end
+            if delay_corrector < 0
+                delay_corrector = 0; % make sure delay_corrector will never be negative
+            end
+            app.FPSdelaycorrectorEditField.Value = num2str(delay_corrector);
+            
+        end
         
         timing_idx = timing_idx + 1;
         frameCount = 0; % reset the frames counter
@@ -650,8 +723,9 @@ if properties.save_data == 1 && err ~= 1
     properties.exp_end_time = datetime;
     properties.exp_end_time_unix = posixtime(datetime);
     
-    err = save_parameters(app, properties, filename, t, timing, playlist); % saves recording parameters
-    err = save_buffer(app, properties, filename, playlist, buffer_VIS, buffer_NIR, buffer_IR, video_idx, buff_idx); % update data to mat file
+    [err, properties] = save_parameters(app, properties, filename, t, timing, playlist); % saves recording parameters
+    [err, properties] = save_buffer(app, properties, filename, playlist, buffer_VIS, buffer_NIR, buffer_IR,...
+        properties.RGB_frame_err, properties.NIR_frame_err, properties.LWIR_frame_err, video_idx, buff_idx); % update data to mat file
     
     try
         app.Status1.FontColor = [0.29,0.58,0.07]; % dark green

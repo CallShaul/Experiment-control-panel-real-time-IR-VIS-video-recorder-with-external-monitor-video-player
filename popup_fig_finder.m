@@ -16,6 +16,7 @@ width_hight(1) = popup_fig.Position(3);
 width_hight(2)= popup_fig.Position(4);
 location = str2num(app.PopuppositionEditField.Value);
 
+%if strcmp(run_file_name, 'intro_popup.mlapp') == 1
 if strcmp(run_file_name, 'intro_popup.mlapp') == 1
     location(1) = location(1) + 158;
 end

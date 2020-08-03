@@ -17,7 +17,7 @@
   </temperature>
   <optics_text></optics_text>
   -->
-  <framerate>100.0</framerate>             <!-- scaled down frame rate, must be less or equal than camera frame rate -->
+  <framerate>60.0</framerate>             <!-- scaled down frame rate, must be less or equal than camera frame rate -->
   <bispectral>0</bispectral>              <!-- 0=only thermal sensor, 1=bispectral technology (only PI200/PI230) -->
   <autoflag>
     <enable>0</enable>
@@ -31,4 +31,5 @@
   <buffer_queue_size>5</buffer_queue_size> <!-- internal buffer queue size -->
   <enable_high_precision>1</enable_high_precision> <!-- 0=Off, 1=On; Enables temperatures with more than 1 decimal places. Depends on used camera(IRImager::getTemprangeDecimal()).-->
   <radial_distortion_correction>1</radial_distortion_correction> <!-- Distortion correction: 0=Off, 1=Normal, 2=Wide -->
+  <use_external_probe>0</use_external_probe> <!-- 0=Off, 1=On; Temperatures values of external probe BR20AR are accessible on PIFs first analog input in °C-->
 </imager>

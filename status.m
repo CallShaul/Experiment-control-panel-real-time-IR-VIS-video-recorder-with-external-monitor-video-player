@@ -12,7 +12,7 @@ end
 
 app.Status1.Value = sprintf('%s', status_text); % display text at status bar
 
-if stop == 1 % && status_color == 'r'
+if stop == 1
     app.StopButton.ButtonPushedFcn(1,1);
     err = 1; % announce error occurred
     viewer_is_running = 0; % stop frame grabber loop
