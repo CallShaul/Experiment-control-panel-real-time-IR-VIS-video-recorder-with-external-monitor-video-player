@@ -18,10 +18,10 @@ It is also possible to use DSLR or ELP USB camera, with manual optical zoom and 
 https://www.amazon.com/gp/product/B07R4CLRQH/ref=ppx_yo_dt_b_asin_title_o02_s00?ie=UTF8&psc=1
 
 # Near Infra Red (NIR) camera:
-It is possible to convert most of DSL or mirrorless cameras and remove the IR filter, it can be done at home or professionally for example:
+It is possible to convert most of DSLR or mirrorless cameras and remove the IR filter, it can be done at home or professionally for example:
 https://www.infraredcameraconversions.co.uk/cameras/4593518192
 
-For active NIR camera I recommend using the 2 MP CMOS OV2710 based camera, with 10 850 nm LEDs:
+For active NIR camera: consider using the 2 MP CMOS OV2710 based camera, with 10 850 nm LEDs (I reccomend attaching heat sink with special thermal glue to it's top to keep it cool for long recoring duration):
 https://www.amazon.com/gp/product/B07PPN7TXQ/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&psc=1
 
 
